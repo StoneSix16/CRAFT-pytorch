@@ -40,7 +40,7 @@ def copyStateDict(state_dict):
 def str2bool(v):
     return v.lower() in ("yes", "y", "true", "t", "1")
 
-parser = argparse.ArgumentParser(description='CRAFT Text Detection')
+parser = argparse.ArgumentParser(description='CRAFT Text Detection', prog='')
 parser.add_argument('--trained_model', default='weights/craft_mlt_25k.pth', type=str, help='pretrained model')
 parser.add_argument('--text_threshold', default=0.7, type=float, help='text confidence threshold')
 parser.add_argument('--low_text', default=0.4, type=float, help='text low-bound score')
@@ -54,14 +54,10 @@ parser.add_argument('--test_folder', default='/data/', type=str, help='folder pa
 parser.add_argument('--refine', default=False, action='store_true', help='enable link refiner')
 parser.add_argument('--refiner_model', default='weights/craft_refiner_CTW1500.pth', type=str, help='pretrained refiner model')
 
-args = parser.parse_args()
+args = parser.parse_args(namespace=argparse.Namespace())
 
 """ For test images in a folder """
 image_list, _, _ = file_utils.get_files(args.test_folder)
-
-result_folder = './result/'
-if not os.path.isdir(result_folder):
-    os.mkdir(result_folder)
 
 def test_net(net, image, text_threshold, link_threshold, low_text, cuda, poly, refine_net=None):
     t0 = time.time()
@@ -114,45 +110,11 @@ def test_net(net, image, text_threshold, link_threshold, low_text, cuda, poly, r
 
     return boxes, polys, ret_score_text
 
-def get_char_region(net, image, text_threshold, link_threshold, low_text, cuda):
-    t0 = time.time()
-    # resize
-    img_resized, target_ratio, size_heatmap = imgproc.resize_aspect_ratio(image, args.canvas_size, interpolation=cv2.INTER_LINEAR, mag_ratio=args.mag_ratio)
-    ratio_h = ratio_w = 1 / target_ratio
-
-    # preprocessing
-    x = imgproc.normalizeMeanVariance(img_resized)
-    x = torch.from_numpy(x).permute(2, 0, 1)    # [h, w, c] to [c, h, w]
-    x = Variable(x.unsqueeze(0))                # [c, h, w] to [b, c, h, w]
-    if cuda:
-        x = x.cuda()
-
-    # forward pass
-    with torch.no_grad():
-        y, feature = net(x)
-
-    # make score and link map
-    score_text = y[0,:,:,0].cpu().data.numpy()
-    score_link = y[0,:,:,1].cpu().data.numpy()
-
-    t0 = time.time() - t0
-    t1 = time.time()
-
-    # Post-processing
-    boxes, _, _ = craft_utils.getDetBoxes_core(score_text, score_link, text_threshold, link_threshold, low_text)
-
-    # coordinate adjustment
-    boxes = craft_utils.adjustResultCoordinates(boxes, ratio_w, ratio_h)
-
-    t1 = time.time() - t1
-
-    if args.show_time : print("\ninfer/postproc time : {:.3f}/{:.3f}".format(t0, t1))
-
-    return boxes
-
-
-
 if __name__ == '__main__':
+    result_folder = './result/'
+    if not os.path.isdir(result_folder):
+        os.mkdir(result_folder)
+
     # load net
     net = CRAFT()     # initialize
 
