@@ -2,7 +2,7 @@
 import os
 import numpy as np
 import cv2
-from . import imgproc
+import imgproc
 
 # borrowed from https://github.com/lengstrom/fast-style-transfer/blob/master/src/utils.py
 def get_files(img_dir):
@@ -40,7 +40,7 @@ def saveResult(img_file, img, boxes, dirname='./result/', verticals=None, texts=
         Return:
             None
         """
-        img = np.array(img)
+        img = np.array(img.copy())
 
         # make result file list
         filename, file_ext = os.path.splitext(os.path.basename(img_file))

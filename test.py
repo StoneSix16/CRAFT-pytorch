@@ -19,11 +19,11 @@ from PIL import Image
 import cv2
 from skimage import io
 import numpy as np
-from . import craft_utils,imgproc,file_utils
+import craft_utils,imgproc,file_utils
 import json
 import zipfile
 
-from .craft import CRAFT
+from craft import CRAFT
 
 from collections import OrderedDict
 def copyStateDict(state_dict):
